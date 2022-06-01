@@ -31,7 +31,7 @@ Extracting a summary, determining sentiment, classifying the needs of a customer
 
 As in any problem, it is a good rule to start defining what we will be working with. In general, sequence classification is the task of predicting a category (label) given a sequence of inputs. Often, within the Natural Language Processing domain, sequence classification applied to text inputs is referred to as text classification. However, some people place under the same umbrella tasks where one wants to classify every word in a sentence, or every word in a document, for example finding personally identifiable information (PII) in a document. Usually, those tasks are rather tagged as token classification ones, but that is not always the case. I like this distinction as it is intuitive, therefore it will be adopted here and in all the other contents, unless specified.
 
-In this article, we will focus on the task of predicting the overall category of a sequence of words, either it being a sentence or a set of sentences. We will primarily focus on the [BERT](https://arxiv.org/abs/1810.04805) model, an encoder-only transformer model which can be adapted and trained for text classification. Specifically, we will fine-tune a pretrained BERT model using Hugging Face [Transformers](https://github.com/huggingface/transformers), [Tokenizers](https://github.com/huggingface/tokenizers), and [Datasets](https://github.com/huggingface/datasets) libraries. To grasp all the details, we will experiment with different datasets, leverage [BertViz](https://github.com/jessevig/bertviz) and [Ecco](https://github.com/jalammar/ecco) libraries, and edit the source codes ourselves. We will compare how the models diverge when fine-tuned on different datasets, understand why they fail on specific examples, and try to infer general rules to improve the models performance.
+In this article, we will focus on the task of predicting the overall category of a sequence of words, either it being a sentence or a set of sentences. We will primarily focus on the [BERT](https://arxiv.org/abs/1810.04805) model, an encoder-only transformer model which can be adapted and trained for text classification. Specifically, we will fine-tune a pretrained BERT model using Hugging Face [Transformers](https://github.com/huggingface/transformers), [Tokenizers](https://github.com/huggingface/tokenizers), and [Datasets](https://github.com/huggingface/datasets) libraries. SEE NEW LIBRARY EVALUATE To grasp all the details, we will experiment with different datasets, leverage [BertViz](https://github.com/jessevig/bertviz) and [Ecco](https://github.com/jalammar/ecco) libraries, and edit the source codes ourselves. We will compare how the models diverge when fine-tuned on different datasets, understand why they fail on specific examples, and try to infer general rules to improve the models performance.
 
 As in all the CATCHYNAME articles, I assume the readers have some experince in Python and grasp the fundamentals of Machine Learning. I hope you will enjoy this article, as well as the future ones.
 
@@ -47,6 +47,7 @@ Take parts of the intro TBC
 
 ## AG News
 Link to both Hugging Face datasets, source, and paper.
+Dataset analysis: class balance, keywords, lemmatizatio, no stopwords, etc.
 
 ## BERT
 Intro to the model. Intro to the implementation.
@@ -56,9 +57,9 @@ Intro to the model. Intro to the implementation.
 # Bidirectional Encoder Representations from Transformers (a.k.a. BERT)
 BERT is an encoder-only transformer designed to learn deep representations from text. But what does this mean? Long story short, any textual information needs to be transformed into a squence of numbers, which can then be processed by Machine Learning algorithms. Those arrays are called embeddings. The better words and sentences are represented by their embeddings, the more accurate the predictions will be, and BERT does exactly that.
 
-The model leverages several innovative ideas introduced in the last decade, and their joint use allowed BERT to outperform any other model in almost any NLP task by a large margin. The three most important concepts are **transfer-learning**, **self-supervised learning**, and **attention**. 
+The model leverages several innovative ideas introduced in the last decades, and their joint use allowed BERT to outperform any other model in almost any NLP task by a large margin. The three most important concepts are **transfer-learning**, **self-supervised learning**, and **attention**. 
 
-Transfer learning is the basis of human learning. It simply means to leverage previous knowledge to learn new things in a much more effective way. Imagine if you had to learn to walk every time you wanted to try a new sport... The same concept is nowadays applied to most of the Machine Learning task. BERT, and all the transformers-based models, leverage a simple but powerful idea: they are split into a body and a head, which have different structure and goals. To make it (overly) simple, the body "learns the language" and the head "learns the task".
+Transfer learning is the basis of human learning. It simply means to leverage previous knowledge to learn new things in a much more effective way. Imagine if you had to learn to walk every time you wanted to try a new sport... The same concept is nowadays applied to most of the Machine Learning task. BERT, and most of the transformers-based models, leverage a simple but powerful idea: they are split into a body and a head, which have different structure and goals. To make it (overly) simple, in NLP the body "learns the language" and the head "learns the task".
 
 The body's parameters are trained to build the best possible embeddings in a language (pre-training), and they are reused for multiple tasks. This means the pretraining is done once and reused many times, making it "conventient" (economically valuable) to pretrain large models on huge datasets.
 Although the main goal of pretraining the body of a model is to learn a general representation of the language so that it can then be tuned on specific tasks (fine-tuning), a "task" needs to be used in the process. FIND A GOOD WAY TO SAY SUPERVISED LEARNING IS USED/NNEDED AND ACHIEVE BETTER PERFORMANCE THAN UNSUPERVISED. However, manually labelling large amount of data is prohibitelty expensive. But wait, are we sure we cannot somehow automate this? No, we are not.
@@ -70,6 +71,26 @@ Self-supervised learning is essential to leverage the massive amount of unlabele
 The first and second tasks are exclusive, and the choice dpended mainly whether the goal was to get a generative or a discriminative model. 
 In eithr case, the direct consequence of learning those "general" tasks is that the model learns how to build an accurate embedding representation of the language which can be used for many other tasks like text classification, text generation, question answering, summarization, translation, etc. It is enough to replace the head with a new one, fine-tune the model on a specific (usually much smaller) dataset, and the model will learn the task much quicker and deliver much better results. BERT leverages the first and last pretraining tasks, since the goal was to pretrain the body for then performing discriminative tasks.
 
-The last key concept to introduce is attention. Attention is a powerful mechanism that allows the model to learn to focus on a specific part of the input, and to ignore the rest. This is the key to BERT's success.
+The last key concept to introduce is attention. Attention is a powerful mechanism that allows the model to learn to focus on a specific part of the input, and to ignore the rest. Specifically, it is called self-attention, as the model learns to pair each input token with itself and all the others. EXAMPLE.
 
-## 
+## Architecture
+BERT, and in general transformer-based models, are built by stacking transformer layers on top of each other. Each layer has several attention heads of the same dimensionality, and each layer's input and output dimensions are the same. Those two principles maximize the efficiency of distributed training.
+
+As transformers layers have all the same dimensionality, the stack of transformer layers is placed on top an embedding layer, a linear layer that takes as input the token indices, and outputs the embeddings. Its input dimension depends on the vocabulary size. But what does this mean? We missed one step. The embeddings layer expects a numberical representation of the input, not a string. Precisely, it expects a sentence to be represented as a list of inputs. Tokenization is a preprocessing step that solves exactly that. It splits the input sentence into tokens (words, subwords, special characters, ...), and each token - or the most common ones, we will get back there - is mapped to a numerical index. So the embedding layer learns how to represent each index - received in form of a one-hot vector - in a dense form, i.e. the embedding. The subsequent stack of transformer layers is trained to improve the embeddings representations by using the context the token is placed in.
+
+As most of the times embeddings are not our end goal, a model head is added to the model. This is a linear layer that takes as input the output of the last layer of the body, and outputs a prediction.
+
+INTERACTIVE MODEL.
+
+## Tokenizer
+In the representation above, input sentences are split into words -or subwords.  As even inputs for the embedding layer have to be numbers, we first need to represent each input numerically.
+
+While images are natively represented by numbers, sentences get split into tokens. All the tokens of our vocabulary - or the most common ones, we will get back there - are mapped to a numerical index, which is then used as input for the embedding layer.
+
+## Embedding layer
+
+## Trnasformer layer
+
+## Transformers stack
+
+## Model head
