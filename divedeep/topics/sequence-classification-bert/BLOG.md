@@ -47,7 +47,7 @@ Take parts of the intro TBC
 
 ## AG News
 Link to both Hugging Face datasets, source, and paper.
-Dataset analysis: class balance, keywords, lemmatizatio, no stopwords, etc.
+Dataset analysis: class balance, keywords, lemmatization, most common tokens, no stopwords, etc.n
 
 ## BERT
 Intro to the model. Intro to the implementation.
@@ -94,3 +94,4 @@ While images are natively represented by numbers, sentences get split into token
 ## Transformers stack
 
 ## Model head
+
