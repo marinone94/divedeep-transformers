@@ -78,7 +78,7 @@ BERT, and in general transformer-based models, are built by stacking transformer
 
 As transformers layers have all the same dimensionality, the stack of transformer layers is placed on top an embedding layer, a linear layer that takes as input the token indices, and outputs the embeddings. Its input dimension depends on the vocabulary size. But what does this mean? We missed one step. The embeddings layer expects a numberical representation of the input, not a string. Precisely, it expects a sentence to be represented as a list of inputs. Tokenization is a preprocessing step that solves exactly that. It splits the input sentence into tokens (words, subwords, special characters, ...), and each token - or the most common ones, we will get back there - is mapped to a numerical index. So the embedding layer learns how to represent each index - received in form of a one-hot vector - in a dense form, i.e. the embedding. The subsequent stack of transformer layers is trained to improve the embeddings representations by using the context the token is placed in.
 
-As most of the times embeddings are not our end goal, a model head is added to the model. This is a linear layer that takes as input the output of the last layer of the body, and outputs a prediction.
+As most of the times embeddings are not the end goal, a model head is added to the model. This is a linear layer that takes as input the output of the last layer of the body, and outputs a prediction.
 
 INTERACTIVE MODEL.
 
