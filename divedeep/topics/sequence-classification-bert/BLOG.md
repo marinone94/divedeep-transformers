@@ -13,16 +13,19 @@
     * Full visualization (interactive with Javascript?)
 * Pretrained model
     * Masked-tokens predictions
-    * Word similarity
+    * Word/sentence embedding clustering
 * Fine-tuning
     * Tokenization
     * Metrics evolution
     * Resource utilization
 * Inference
-    * Features importance
+    * Features importance (with attention)
     * POS / NER impact
-    * 
+    * Word embedding visualization
+    * Similar examples from training data
 * How can we improve it?
+    * Data augmentation
+    * Retrain masked language model
 * Real-world applications
 * Next CATCHYNAME
 
